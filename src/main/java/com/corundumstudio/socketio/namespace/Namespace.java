@@ -120,12 +120,17 @@ public class Namespace implements SocketIONamespace {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void onEvent(NamespaceClient client, String eventName, List<Object> args, AckRequest ackRequest) {
+        boolean hasIntervened = false;
         for (EventInterceptor eventInterceptor : eventInterceptors) {
             eventInterceptor.onEvent(client, eventName, args, ackRequest);
+            hasIntervened = true;
         }
 
         EventEntry entry = eventListeners.get(eventName);
         if (entry == null) {
+            if (hasIntervened) {
+                sendAck(ackRequest);
+            }
             return;
         }
 
@@ -252,11 +257,8 @@ public class Namespace implements SocketIONamespace {
             return false;
         Namespace other = (Namespace) obj;
         if (name == null) {
-            if (other.name != null)
-                return false;
-        } else if (!name.equals(other.name))
-            return false;
-        return true;
+            return other.name == null;
+        } else return name.equals(other.name);
     }
 
     @Override
